@@ -15,6 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('phone')->unique()->nullable();
+            $table->string('role')->default('client');
+            $table->string('approval_status')->default('approved');
+            $table->string('profile_photo_path')->nullable();
+            $table->text('rejection_reason')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
