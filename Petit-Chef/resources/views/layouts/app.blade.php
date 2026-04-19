@@ -11,6 +11,7 @@
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
+        @stack('styles')
         <style>
             :root {
                 --cream: #F9F5EE;
@@ -229,19 +230,35 @@
         <div class="pc-shell">
             <div class="pc-bg"></div>
             <header class="pc-nav">
-                <a href="{{ route('dashboard') }}" class="pc-brand">petit<span>Chef</span></a>
-                <nav class="pc-nav-links">
-                        @auth
-                        <a href="{{ route('profile.edit') }}" class="pc-btn">Mon profil</a>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                            <button class="pc-btn pc-btn-primary" type="submit">Se déconnecter</button>
-                            </form>
-                        @else
-                        <a href="{{ route('login') }}" class="pc-btn">Connexion</a>
-                        <a href="{{ route('register') }}" class="pc-btn pc-btn-primary">Inscription</a>
-                        @endauth
+                <div style="display:flex;align-items:center;gap:24px">
+                    <a href="{{ route('dashboard') }}" class="pc-brand">petit<span>Chef</span></a>
+                    @auth
+                    <nav style="display:flex;gap:4px">
+                        <a href="{{ route('menu') }}" class="pc-btn {{ request()->routeIs('menu') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            Menu du jour
+                        </a>
+                        @if(auth()->user()->role === 'cook')
+                        <a href="{{ route('cook.dashboard') }}" class="pc-btn {{ request()->routeIs('cook.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+                            Espace Cuisinier
+                        </a>
+                        @endif
                     </nav>
+                    @endauth
+                </div>
+                <nav class="pc-nav-links">
+                    @auth
+                    <a href="{{ route('profile.edit') }}" class="pc-btn">Mon profil</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="pc-btn pc-btn-primary" type="submit">Se déconnecter</button>
+                    </form>
+                    @else
+                    <a href="{{ route('login') }}" class="pc-btn">Connexion</a>
+                    <a href="{{ route('register') }}" class="pc-btn pc-btn-primary">Inscription</a>
+                    @endauth
+                </nav>
             </header>
 
             <main class="pc-main">
