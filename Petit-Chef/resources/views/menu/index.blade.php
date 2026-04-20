@@ -56,6 +56,15 @@
                     </div>
                     <div style="font-size:11px;color:var(--mid-gray)">par {{ $dish->cook->name }}</div>
                 </div>
+
+                @if(auth()->check() && auth()->user()->role === 'client')
+                <form method="POST" action="{{ route('cart.add') }}" style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    @csrf
+                    <input type="hidden" name="dish_id" value="{{ $dish->id }}">
+                    <input name="quantity" type="number" min="1" max="{{ $dish->quantity }}" value="1" style="width:70px;border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--warm-white);">
+                    <button class="pc-btn pc-btn-primary" type="submit" style="padding:9px 14px;">Ajouter</button>
+                </form>
+                @endif
             </div>
         </div>
         @endforeach

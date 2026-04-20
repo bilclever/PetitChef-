@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Order;
 
 class Dish extends Model
 {
@@ -20,6 +22,13 @@ class Dish extends Model
     public function cook(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cook_id');
+    }
+
+    public function orders(): BelongsToMany
+    {
+        return $this->belongsToMany(Order::class, 'order_dish')
+            ->withPivot(['quantity', 'unit_price', 'subtotal'])
+            ->withTimestamps();
     }
 
     /** Scope : plat(s) du jour actifs */

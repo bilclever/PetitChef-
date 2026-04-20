@@ -238,6 +238,12 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                             Menu du jour
                         </a>
+                        @if(auth()->user()->role === 'client')
+                        <a href="{{ route('cart.index') }}" class="pc-btn {{ request()->routeIs('cart.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+                            Panier ({{ array_sum(session('cart', [])) ?: 0 }})
+                        </a>
+                        @endif
                         @if(auth()->user()->role === 'cook')
                         <a href="{{ route('cook.dashboard') }}" class="pc-btn {{ request()->routeIs('cook.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>

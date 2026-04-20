@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cook\DishController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,10 @@ Route::middleware('auth')->group(function (): void {
 
 Route::middleware(['auth', 'role:client'])->group(function (): void {
     Route::get('/client', [DashboardController::class, 'client'])->name('client.dashboard');
+    Route::get('/panier', [OrderController::class, 'cart'])->name('cart.index');
+    Route::post('/panier/ajouter', [OrderController::class, 'add'])->name('cart.add');
+    Route::post('/panier/supprimer', [OrderController::class, 'remove'])->name('cart.remove');
+    Route::post('/panier/commander', [OrderController::class, 'checkout'])->name('cart.checkout');
 });
 
 // Routes Cuisinier
