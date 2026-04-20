@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -42,5 +43,9 @@ Route::middleware(['auth', 'role:cook'])->group(function (): void {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function (): void {
-    Route::get('/admin', [DashboardController::class, 'admin'])->name('admin.dashboard');
+    Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::patch('/admin/cooks/{user}/status', [AdminDashboardController::class, 'updateCookStatus'])->name('admin.cooks.status');
+    Route::patch('/admin/reports/{reportId}/status', [AdminDashboardController::class, 'updateReportStatus'])->name('admin.reports.status');
+    Route::patch('/admin/users/{user}/status', [AdminDashboardController::class, 'updateUserStatus'])->name('admin.users.status');
+    Route::get('/admin/api/stats', [AdminDashboardController::class, 'stats'])->name('admin.api.stats');
 });

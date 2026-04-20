@@ -25,6 +25,8 @@ class User extends Authenticatable
         'phone',
         'role',
         'approval_status',
+        'account_status',
+        'account_status_reason',
         'profile_photo_path',
         'rejection_reason',
     ];

@@ -1,5 +1,11 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html
+    lang="fr"
+    @auth
+        data-order-ids="{{ isset($realtimeOrderIds) ? implode(',', $realtimeOrderIds) : '' }}"
+        data-kitchen-channel="{{ isset($realtimeKitchenId) ? $realtimeKitchenId : '' }}"
+    @endauth
+>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -245,6 +251,8 @@
             </header>
 
             <main class="pc-main">
+                <div id="pc-toast-stack" style="position:fixed;top:72px;right:16px;z-index:100;display:grid;gap:8px;max-width:320px;"></div>
+
                 @if (session('status'))
                     <div class="pc-alert pc-alert-success">
                         {{ session('status') }}
@@ -264,5 +272,31 @@
                 @yield('content')
             </main>
         </div>
+
+        <script>
+            window.addEventListener('pc:notify', function (event) {
+                var stack = document.getElementById('pc-toast-stack');
+
+                if (!stack) {
+                    return;
+                }
+
+                var payload = event.detail || {};
+                var title = payload.title || 'Notification';
+                var message = payload.message || '';
+
+                var toast = document.createElement('div');
+                toast.className = 'pc-card';
+                toast.style.padding = '10px 12px';
+                toast.style.borderLeft = '4px solid var(--terracotta)';
+                toast.innerHTML = '<strong style="display:block;font-size:12px;">' + title + '</strong><span style="font-size:12px;color:var(--mid-gray);">' + message + '</span>';
+
+                stack.prepend(toast);
+
+                setTimeout(function () {
+                    toast.remove();
+                }, 4200);
+            });
+        </script>
     </body>
 </html>
