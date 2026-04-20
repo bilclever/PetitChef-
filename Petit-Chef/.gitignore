@@ -22,3 +22,16 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local SQLite databases
+/database/*.sqlite
+
+# Runtime generated storage files
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Frontend package manager caches
+.npm/
+.pnpm-store/
