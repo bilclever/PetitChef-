@@ -1,12 +1,25 @@
 @extends('layouts.app')
 
 @section('content')
+@if(session('status'))
+    <div style="background:#EFF5F0;border:1px solid var(--sage);color:#2d6a4f;padding:12px 16px;border-radius:10px;margin-bottom:18px;font-size:13px;font-weight:500">
+        {{ session('status') }}
+    </div>
+@endif
 <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:24px">
     <div>
         <h1 class="pc-title">Espace <em style="font-style:italic;color:var(--terracotta)">Cuisinier</em></h1>
         <p class="pc-subtitle">{{ now()->isoFormat('dddd D MMMM YYYY') }} · Service du jour</p>
     </div>
     <div style="display:flex;gap:10px">
+        <form method="POST" action="{{ route('cook.service.close') }}"
+              onsubmit="return confirm('Clôturer le service ? Tous les plats du jour actifs seront désactivés.')">
+            @csrf
+            <button type="submit" class="pc-btn" style="border-color:#c0392b;color:#c0392b">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                Clôturer le service
+            </button>
+        </form>
         <a href="{{ route('cook.dishes.create') }}" class="pc-btn pc-btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Ajouter un plat
@@ -60,26 +73,28 @@
                     <tr>
                         <td><strong>#{{ $order->id }}</strong></td>
                         <td>{{ $order->client->name }}</td>
-                        <td style="color:var(--mid-gray)">{{ $order->pickup_time }}</td>
+                        <td style="color:var(--mid-gray)">{{ $order->pickup_time ?? '—' }}</td>
                         <td>{{ number_format($order->total, 0, ',', ' ') }} F</td>
                         <td>
-                            <span class="pc-status pc-status-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
+                            @php
+                                $colors = ['recue'=>'#3B6FD4','preparation'=>'var(--terracotta)','prete'=>'var(--sage)','livree'=>'#888'];
+                                $color = $colors[$order->status] ?? '#888';
+                            @endphp
+                            <span style="font-size:11px;font-weight:600;color:{{ $color }};background:{{ $color }}18;padding:2px 8px;border-radius:10px">
+                                {{ $order->status_label }}
+                            </span>
                         </td>
                         <td>
-                            @if($order->status === 'reçue')
+                            @if($order->status !== 'livree')
                                 <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
                                     @csrf @method('PATCH')
-                                    <button class="pc-btn pc-btn-primary" style="padding:5px 10px;font-size:12px">Préparer</button>
-                                </form>
-                            @elseif($order->status === 'preparation')
-                                <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
-                                    @csrf @method('PATCH')
-                                    <button class="pc-btn" style="padding:5px 10px;font-size:12px;border-color:var(--sage);color:var(--sage)">Prête</button>
-                                </form>
-                            @elseif($order->status === 'prete')
-                                <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
-                                    @csrf @method('PATCH')
-                                    <button class="pc-btn" style="padding:5px 10px;font-size:12px">Livrée</button>
+                                    @if($order->status === 'recue')
+                                        <button class="pc-btn pc-btn-primary" style="padding:5px 10px;font-size:12px">Préparer</button>
+                                    @elseif($order->status === 'preparation')
+                                        <button class="pc-btn" style="padding:5px 10px;font-size:12px;border-color:var(--sage);color:var(--sage)">Prête ✓</button>
+                                    @elseif($order->status === 'prete')
+                                        <button class="pc-btn" style="padding:5px 10px;font-size:12px">Livrée</button>
+                                    @endif
                                 </form>
                             @endif
                         </td>
@@ -97,18 +112,21 @@
         <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--mid-gray);margin-bottom:12px">Mes plats du jour</div>
         <div style="display:flex;flex-direction:column;gap:10px">
             @forelse($dishes as $dish)
-            <div class="pc-card" style="padding:0;{{ $dish->is_of_day ? 'border-color:var(--terracotta)' : '' }}">
+            <div class="pc-card" style="padding:0;{{ $dish->is_of_day ? 'border-color:var(--terracotta)' : '' }}{{ !$dish->is_active ? ';opacity:0.55' : '' }}">
                 <div style="display:flex;align-items:center;gap:14px;padding:14px 16px">
                     @if($dish->photo_path)
                         <img src="{{ asset('storage/'.$dish->photo_path) }}" style="width:48px;height:48px;border-radius:8px;object-fit:cover;flex-shrink:0">
                     @else
-                        <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#F5DEB3,#DEB887);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">{{ $dish->emoji ?? '🍽️' }}</div>
+                        <div style="width:48px;height:48px;border-radius:8px;background:linear-gradient(135deg,#F5DEB3,#DEB887);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽️</div>
                     @endif
                     <div style="flex:1;min-width:0">
                         <div style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px">
                             {{ $dish->name }}
                             @if($dish->is_of_day)
                                 <span style="font-size:10px;background:#FEF0EA;color:var(--terracotta);padding:1px 7px;border-radius:10px;font-weight:600">⭐ Plat du jour</span>
+                            @endif
+                            @if(!$dish->is_active)
+                                <span style="font-size:10px;background:#f5f5f5;color:#999;padding:1px 7px;border-radius:10px;font-weight:600">Désactivé</span>
                             @endif
                         </div>
                         <div style="font-size:12px;color:var(--mid-gray)">
@@ -117,10 +135,20 @@
                         </div>
                     </div>
                     <div style="display:flex;gap:6px;flex-shrink:0">
-                        <form method="POST" action="{{ route('cook.dishes.toggle-ofday', $dish) }}">
-                            @csrf @method('PATCH')
-                            <button class="pc-btn" style="padding:5px 8px;font-size:13px" title="Plat du jour">⭐</button>
-                        </form>
+                        @if(!$dish->is_active)
+                            <form method="POST" action="{{ route('cook.dishes.toggle-active', $dish) }}">
+                                @csrf @method('PATCH')
+                                <button class="pc-btn" style="padding:5px 8px;font-size:12px;border-color:var(--sage);color:var(--sage)" title="Réactiver">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>
+                                    Réactiver
+                                </button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('cook.dishes.toggle-ofday', $dish) }}">
+                                @csrf @method('PATCH')
+                                <button class="pc-btn" style="padding:5px 8px;font-size:13px" title="Plat du jour">⭐</button>
+                            </form>
+                        @endif
                         <a href="{{ route('cook.dishes.edit', $dish) }}" class="pc-btn" style="padding:5px 8px">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         </a>

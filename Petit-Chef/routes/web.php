@@ -1,7 +1,8 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cook\DishController;
+use App\Http\Controllers\Cook\OrderController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
@@ -38,7 +39,6 @@ Route::middleware(['auth', 'role:client'])->group(function (): void {
     Route::get('/client', [DashboardController::class, 'client'])->name('client.dashboard');
 });
 
-// Routes Cuisinier
 Route::middleware(['auth', 'role:cook'])
     ->prefix('cuisinier')
     ->name('cook.')
@@ -50,6 +50,9 @@ Route::middleware(['auth', 'role:cook'])
         Route::put('plats/{dish}', [DishController::class, 'update'])->name('dishes.update');
         Route::delete('plats/{dish}', [DishController::class, 'destroy'])->name('dishes.destroy');
         Route::patch('plats/{dish}/plat-du-jour', [DishController::class, 'toggleOfDay'])->name('dishes.toggle-ofday');
+        Route::patch('plats/{dish}/toggle-actif', [DishController::class, 'toggleActive'])->name('dishes.toggle-active');
+        Route::patch('commandes/{order}/avancer', [OrderController::class, 'advance'])->name('orders.advance');
+        Route::post('service/cloture', [DishController::class, 'closeService'])->name('service.close');
     });
 
 Route::middleware(['auth', 'role:admin'])->group(function (): void {
