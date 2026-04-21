@@ -18,9 +18,56 @@ class DashboardController extends Controller
 
     public function client(): View
     {
+        $user = auth()->user();
+
+        // Récupérer les vraies statistiques du client
+        $ordersCount = $user->orders()->count();
+        $totalSpent = $user->orders()->sum('total_amount');
+        $totalDishesOrdered = $user->orders()->with('dishes')->get()->sum(function ($order) {
+            return $order->dishes->sum('pivot.quantity');
+        });
+
+        $query = \App\Models\Dish::available()->with('cook');
+
+        // Filtre par prix maximum
+        if (request('max_price')) {
+            $query->where('price', '<=', request('max_price'));
+        }
+
+        // Filtre par cuisinier
+        if (request('cook_id')) {
+            $query->where('cook_id', request('cook_id'));
+        }
+
+        // Tri
+        switch (request('sort')) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'newest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        $dishes = $query->get();
+
         return view('dashboard', [
             'title' => 'Espace Client',
             'description' => 'Commander, suivre tes commandes et gérer ton compte.',
+            'dishes' => $dishes,
+            'stats' => [
+                'orders_count' => $ordersCount,
+                'total_spent' => $totalSpent,
+                'total_dishes_ordered' => $totalDishesOrdered,
+                'user_id' => $user->id,
+            ],
         ]);
     }
 

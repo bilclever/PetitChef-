@@ -49,7 +49,7 @@
             .pc-nav {
                 position: sticky;
                 top: 0;
-                z-index: 20;
+                z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -104,12 +104,34 @@
                 color: #fff;
             }
 
+            .pc-btn-danger {
+                border-color: #dc3545;
+                background: #dc3545;
+                color: #fff;
+            }
+
+            .pc-btn-danger:hover {
+                background: #c82333;
+                border-color: #c82333;
+                color: #fff;
+            }
+
+            .pc-btn-secondary {
+                border-color: var(--border);
+                background: var(--warm-white);
+                color: var(--charcoal);
+            }
+
+            .pc-btn-secondary:hover {
+                background: var(--light-gray);
+                border-color: var(--mid-gray);
+                color: var(--charcoal);
+            }
+
             .pc-main {
-                position: relative;
-                z-index: 2;
                 max-width: 1120px;
                 margin: 0 auto;
-                padding: 28px 20px 36px;
+                padding: 0 20px 36px;
             }
 
             .pc-alert {

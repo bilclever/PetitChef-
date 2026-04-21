@@ -39,6 +39,7 @@ Route::middleware(['auth', 'role:client'])->group(function (): void {
     Route::get('/client', [DashboardController::class, 'client'])->name('client.dashboard');
     Route::get('/panier', [OrderController::class, 'cart'])->name('cart.index');
     Route::post('/panier/ajouter', [OrderController::class, 'add'])->name('cart.add');
+    Route::patch('/panier/modifier', [OrderController::class, 'update'])->name('cart.update');
     Route::post('/panier/supprimer', [OrderController::class, 'remove'])->name('cart.remove');
     Route::post('/panier/commander', [OrderController::class, 'checkout'])->name('cart.checkout');
 });

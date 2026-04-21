@@ -7,14 +7,13 @@
         <p class="pc-subtitle">{{ now()->isoFormat('dddd D MMMM YYYY') }}</p>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-        <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--light-gray);color:var(--mid-gray)">Clôture à 14h</span>
         <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#EFF5F0;color:var(--sage)">{{ $dishes->count() }} plat(s) disponibles</span>
     </div>
 </div>
 
 <div style="background:#EAF0FE;border:1px solid #9BB4EC;border-radius:10px;padding:12px 16px;font-size:13px;color:#2B50A0;display:flex;align-items:center;gap:9px;margin-bottom:24px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    Commandes à passer avant 14h. Récupération sur place ou livraison à domicile.
+    Récupération sur place ou livraison à domicile.
 </div>
 
 @if($dishes->isEmpty())
