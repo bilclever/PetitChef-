@@ -32,7 +32,7 @@
                 @if($dish->photo_path)
                     <img src="{{ asset('storage/'.$dish->photo_path) }}" style="width:100%;height:100%;object-fit:cover">
                 @else
-                    <span style="font-size:52px">{{ $dish->emoji ?? '🍽️' }}</span>
+                    <span style="font-size:52px">🍽️</span>
                 @endif
                 <div style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.9);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;border:1px solid var(--border);{{ $dish->quantity <= 3 ? 'color:var(--terracotta);border-color:var(--terracotta)' : '' }}">
                     {{ $dish->quantity }} restants

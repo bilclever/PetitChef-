@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dish;
+use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,16 +13,18 @@ class DishController extends Controller
 {
     public function dashboard(): View
     {
-        $cook = auth()->user();
+        $cook   = auth()->user();
         $dishes = Dish::where('cook_id', $cook->id)->latest()->get();
-
-        // Données fictives pour les commandes tant que le module n'existe pas
-        $orders = collect();
+        $orders = Order::where('cook_id', $cook->id)
+            ->whereIn('status', ['recue', 'preparation', 'prete'])
+            ->with('client')
+            ->latest()
+            ->get();
 
         $stats = [
-            'commandes' => 0,
-            'livrees'   => 0,
-            'fcfa'      => 0,
+            'commandes' => Order::where('cook_id', $cook->id)->count(),
+            'livrees'   => Order::where('cook_id', $cook->id)->where('status', 'livree')->count(),
+            'fcfa'      => Order::where('cook_id', $cook->id)->where('status', 'livree')->sum('total'),
             'plats'     => $dishes->count(),
         ];
 
@@ -40,7 +43,6 @@ class DishController extends Controller
             'price'       => 'required|integer|min:0',
             'description' => 'nullable|string',
             'quantity'    => 'required|integer|min:0',
-            'emoji'       => 'nullable|string|max:10',
             'photo'       => 'nullable|image|max:5120',
             'is_of_day'   => 'nullable|boolean',
         ]);
@@ -51,6 +53,7 @@ class DishController extends Controller
 
         $data['cook_id']   = auth()->id();
         $data['is_of_day'] = $request->boolean('is_of_day');
+        $data['served_date'] = $data['is_of_day'] ? today() : null;
         unset($data['photo']);
 
         Dish::create($data);
@@ -73,7 +76,6 @@ class DishController extends Controller
             'price'       => 'required|integer|min:0',
             'description' => 'nullable|string',
             'quantity'    => 'required|integer|min:0',
-            'emoji'       => 'nullable|string|max:10',
             'photo'       => 'nullable|image|max:5120',
             'is_of_day'   => 'nullable|boolean',
         ]);
@@ -83,6 +85,7 @@ class DishController extends Controller
         }
 
         $data['is_of_day'] = $request->boolean('is_of_day');
+        $data['served_date'] = $data['is_of_day'] ? today() : null;
         unset($data['photo']);
 
         $dish->update($data);
@@ -100,8 +103,28 @@ class DishController extends Controller
     public function toggleOfDay(Dish $dish): RedirectResponse
     {
         $this->authorizeOwner($dish);
-        $dish->update(['is_of_day' => ! $dish->is_of_day]);
-        return back()->with('status', $dish->is_of_day ? '⭐ Plat du jour activé' : 'Plat du jour retiré');
+        $isOfDay = ! $dish->is_of_day;
+        $dish->update([
+            'is_of_day'   => $isOfDay,
+            'served_date' => $isOfDay ? today() : null,
+        ]);
+        return back()->with('status', $isOfDay ? 'Plat du jour activé' : 'Plat du jour retiré');
+    }
+
+    /** Clôture du service : désactive tous les plats du jour restants */
+    public function closeService(): RedirectResponse
+    {
+        $count = Dish::closeService();
+        return redirect()->route('cook.dashboard')
+            ->with('status', "{$count} plat(s) du jour désactivé(s). Service clôturé.");
+    }
+
+    /** Active / désactive manuellement un plat */
+    public function toggleActive(Dish $dish): RedirectResponse
+    {
+        $this->authorizeOwner($dish);
+        $dish->update(['is_active' => ! $dish->is_active]);
+        return back()->with('status', $dish->is_active ? 'Plat réactivé.' : 'Plat désactivé.');
     }
 
     private function authorizeOwner(Dish $dish): void
