@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -29,6 +30,8 @@ class User extends Authenticatable
         'account_status_reason',
         'profile_photo_path',
         'rejection_reason',
+        'shop_is_open',
+        'shop_closes_at',
     ];
 
     /**
@@ -61,5 +64,38 @@ class User extends Authenticatable
         }
 
         return asset('storage/'.$this->profile_photo_path);
+    }
+
+    public function clientOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'client_id');
+    }
+
+    public function cookOrders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'cook_id');
+    }
+
+    /**
+     * Vérifie si le cuisinier est actuellement ouvert
+     */
+    public function isShopOpen(): bool
+    {
+        if ($this->role !== 'cook') {
+            return false;
+        }
+
+        // Fermé manuellement
+        if (! $this->shop_is_open) {
+            return false;
+        }
+
+        // Vérifier l'heure de clôture automatique
+        if ($this->shop_closes_at) {
+            $now = now()->format('H:i');
+            return $now < $this->shop_closes_at;
+        }
+
+        return true;
     }
 }

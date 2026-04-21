@@ -1,35 +1,50 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $clientStats = $clientStats ?? [
+        'total_orders' => 0,
+        'open_orders' => 0,
+        'total_paid_amount' => 0,
+        'unpaid_orders' => 0,
+        'cart_items' => 0,
+        'cart_subtotal' => 0,
+    ];
+@endphp
+
 <section class="pc-card" style="padding:24px;">
     <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;">
         <div>
             <h1 class="pc-title">{{ $title }}</h1>
             <p class="pc-subtitle">{{ $description }}</p>
         </div>
-        <div class="pc-status pc-status-{{ auth()->user()->approval_status }}">{{ ucfirst(auth()->user()->approval_status) }}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end;">
+            <a href="{{ route('menu') }}" class="pc-btn" style="padding:6px 10px;">Voir le menu</a>
+            <a href="{{ route('cart.index') }}" class="pc-btn pc-btn-primary" style="padding:6px 10px;">Ouvrir le panier</a>
+            <div class="pc-status pc-status-{{ auth()->user()->approval_status }}">{{ ucfirst(auth()->user()->approval_status) }}</div>
+        </div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;">
         <div class="pc-card" style="padding:14px;border-radius:12px;">
-            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Profil</div>
-            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ ucfirst(auth()->user()->role) }}</div>
-            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Rôle connecté</div>
-        </div>
-        <div class="pc-card" style="padding:14px;border-radius:12px;">
             <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Commandes</div>
-            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">12</div>
-            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Aujourd'hui</div>
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ $clientStats['total_orders'] }}</div>
+            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Historique total</div>
         </div>
         <div class="pc-card" style="padding:14px;border-radius:12px;">
-            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Revenus</div>
-            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">42 100</div>
-            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">FCFA estimés</div>
+            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">En cours</div>
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ $clientStats['open_orders'] }}</div>
+            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Préparation / prêtes</div>
         </div>
         <div class="pc-card" style="padding:14px;border-radius:12px;">
-            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Compte</div>
-            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ auth()->user()->id }}</div>
-            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Identifiant</div>
+            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Total payé</div>
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ number_format($clientStats['total_paid_amount'], 0, ',', ' ') }}</div>
+            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">FCFA</div>
+        </div>
+        <div class="pc-card" style="padding:14px;border-radius:12px;">
+            <div style="font-size:11px;color:var(--mid-gray);text-transform:uppercase;letter-spacing:.6px;">Panier</div>
+            <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;line-height:1;margin-top:4px;">{{ $clientStats['cart_items'] }}</div>
+            <div style="font-size:12px;color:var(--mid-gray);margin-top:2px;">Article(s) · {{ number_format($clientStats['cart_subtotal'], 0, ',', ' ') }} FCFA</div>
         </div>
     </div>
 </section>
@@ -47,28 +62,55 @@
                         <th>Commande</th>
                         <th>Date</th>
                         <th>Total</th>
+                        <th>Paiement</th>
                         <th>Statut</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>#1042</td>
-                        <td>12 avr. 2026</td>
-                        <td>7 800 FCFA</td>
-                        <td><span class="pc-status pc-status-pending">Préparation</span></td>
-                    </tr>
-                    <tr>
-                        <td>#1039</td>
-                        <td>10 avr. 2026</td>
-                        <td>3 000 FCFA</td>
-                        <td><span class="pc-status pc-status-approved">Livrée</span></td>
-                    </tr>
-                    <tr>
-                        <td>#1018</td>
-                        <td>5 avr. 2026</td>
-                        <td>5 600 FCFA</td>
-                        <td><span class="pc-status pc-status-rejected">Annulée</span></td>
-                    </tr>
+                    @php
+                        $statusLabels = [
+                            'recue' => 'Reçue',
+                            'en_preparation' => 'En préparation',
+                            'prete' => 'Prête',
+                            'livree' => 'Livrée',
+                            'annulee' => 'Annulée',
+                        ];
+                    @endphp
+                    @forelse(($recentOrders ?? collect()) as $order)
+                        <tr>
+                            <td>#{{ $order->id }}</td>
+                            <td>{{ optional($order->created_at)->format('d/m/Y H:i') }}</td>
+                            <td>{{ number_format((int) $order->total_price, 0, ',', ' ') }} FCFA</td>
+                            <td>
+                                @if ($order->is_paid)
+                                    <span style="font-size:11px;color:var(--sage);font-weight:600">Payée</span>
+                                @else
+                                    <span style="font-size:11px;color:var(--terracotta);font-weight:600">En attente</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                                    @php
+                                        $statusClass = in_array($order->status, ['livree'], true)
+                                            ? 'approved'
+                                            : (in_array($order->status, ['annulee'], true) ? 'rejected' : 'pending');
+                                    @endphp
+                                    <span class="pc-status pc-status-{{ $statusClass }}" data-order-status="{{ $order->id }}">{{ $statusLabels[$order->status] ?? $order->status }}</span>
+                                    @if (! $order->is_paid)
+                                        <form method="POST" action="{{ route('client.orders.pay', $order) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="pc-btn" style="padding:4px 8px;font-size:11px">Payer</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" style="color:var(--mid-gray);text-align:center;">Aucune commande pour le moment.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

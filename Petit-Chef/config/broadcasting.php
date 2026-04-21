@@ -33,6 +33,8 @@ return [
                 'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
             ],
             'client_options' => [
+                // Désactiver la vérification SSL en local (Windows/cURL)
+                'verify' => env('APP_ENV') === 'production',
             ],
         ],
 

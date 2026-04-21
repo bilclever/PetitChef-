@@ -3,11 +3,11 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OrderStatusUpdated implements ShouldBroadcast
+class OrderStatusUpdated implements ShouldBroadcastNow
 {
     use Dispatchable;
     use SerializesModels;
@@ -24,6 +24,7 @@ class OrderStatusUpdated implements ShouldBroadcast
         return [
             new PrivateChannel('order.'.$orderId),
             new PrivateChannel('kitchen.'.$cookId),
+            new PrivateChannel('admin.stream'),
         ];
     }
 

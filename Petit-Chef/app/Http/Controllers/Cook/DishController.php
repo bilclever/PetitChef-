@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cook;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dish;
+use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -18,17 +19,34 @@ class DishController extends Controller
             ? Dish::where('cook_id', $cook->id)->latest()->get()
             : collect();
 
-        // Données fictives pour les commandes tant que le module n'existe pas
-        $orders = collect();
+        $orders = Schema::hasTable('orders')
+            ? Order::query()
+                ->with('client')
+                ->where('cook_id', $cook->id)
+                ->whereIn('status', ['recue', 'en_preparation', 'prete'])
+                ->orderByDesc('created_at')
+                ->limit(20)
+                ->get()
+            : collect();
+
+        $ordersBase = Schema::hasTable('orders')
+            ? Order::query()->where('cook_id', $cook->id)
+            : null;
 
         $stats = [
-            'commandes' => 0,
-            'livrees'   => 0,
-            'fcfa'      => 0,
+            'commandes' => $ordersBase ? (clone $ordersBase)->count() : 0,
+            'livrees'   => $ordersBase ? (clone $ordersBase)->where('status', 'livree')->count() : 0,
+            'fcfa'      => $ordersBase ? (int) ((clone $ordersBase)->where('is_paid', true)->sum('total_price')) : 0,
             'plats'     => $dishes->count(),
         ];
 
-        return view('cook.dashboard', compact('dishes', 'orders', 'stats'));
+        return view('cook.dashboard', [
+            'dishes' => $dishes,
+            'orders' => $orders,
+            'stats'  => $stats,
+            'realtimeOrderIds' => $orders->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            'realtimeKitchenId' => (int) $cook->id,
+        ]);
     }
 
     public function create(): View
@@ -91,6 +109,10 @@ class DishController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
+            // Supprimer l'ancienne photo si elle existe
+            if ($dish->photo_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($dish->photo_path);
+            }
             $data['photo_path'] = $request->file('photo')->store('dishes', 'public');
         }
 

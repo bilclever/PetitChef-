@@ -15,3 +15,11 @@ Broadcast::channel('order.{id}', function ($user, int $id): bool {
 Broadcast::channel('kitchen.{cookId}', function ($user, int $cookId): bool {
     return (int) $user->id === $cookId && $user->role === 'cook';
 });
+
+Broadcast::channel('admin.stream', function ($user): bool {
+    return $user->role === 'admin';
+});
+
+Broadcast::channel('client.{clientId}', function ($user, int $clientId): bool {
+    return (int) $user->id === $clientId && $user->role === 'client';
+});

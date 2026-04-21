@@ -6,8 +6,40 @@
         <h1 class="pc-title">Espace <em style="font-style:italic;color:var(--terracotta)">Cuisinier</em></h1>
         <p class="pc-subtitle">{{ now()->isoFormat('dddd D MMMM YYYY') }} · Service du jour</p>
     </div>
-    <div style="display:flex;gap:10px">
-        <a href="{{ route('cook.dishes.create') }}" class="pc-btn pc-btn-primary">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+
+        {{-- Statut boutique --}}
+        @php $cook = auth()->user(); @endphp
+        <div style="display:flex;align-items:center;gap:8px;background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
+            @if($cook->isShopOpen())
+                <span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;display:inline-block"></span>
+                <span style="font-size:12px;font-weight:600;color:var(--sage)">Ouvert</span>
+            @else
+                <span style="width:8px;height:8px;border-radius:50%;background:#c0392b;display:inline-block"></span>
+                <span style="font-size:12px;font-weight:600;color:#c0392b">Fermé</span>
+            @endif
+        </div>
+
+        {{-- Toggle ouvert/fermé --}}
+        <form method="POST" action="{{ route('cook.shop.toggle') }}">
+            @csrf @method('PATCH')
+            <button type="submit" class="pc-btn {{ $cook->isShopOpen() ? '' : 'pc-btn-primary' }}" style="padding:7px 14px">
+                {{ $cook->isShopOpen() ? '🔴 Fermer ma boutique' : '🟢 Ouvrir ma boutique' }}
+            </button>
+        </form>
+
+        {{-- Heure de clôture --}}
+        <form method="POST" action="{{ route('cook.shop.closing-time') }}" style="display:flex;gap:6px;align-items:center">
+            @csrf @method('PATCH')
+            <input type="time" name="shop_closes_at" class="pc-input"
+                value="{{ $cook->shop_closes_at ?? '' }}"
+                style="width:110px;padding:7px 10px"
+                title="Heure de clôture automatique">
+            <button type="submit" class="pc-btn" style="padding:7px 10px;white-space:nowrap">⏰ Définir clôture</button>
+        </form>
+
+        <a href="{{ route('menu') }}" class="pc-btn" style="padding:7px 14px">Voir le menu</a>
+        <a href="{{ route('cook.dishes.create') }}" class="pc-btn pc-btn-primary" style="padding:7px 14px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Ajouter un plat
         </a>
@@ -58,29 +90,35 @@
                 <tbody>
                     @forelse($orders as $order)
                     <tr>
-                        <td><strong>#{{ $order->id }}</strong></td>
+                        <td><a href="{{ route('cook.orders.show', $order) }}" style="color:var(--terracotta);text-decoration:none;font-weight:600">#{{ $order->id }}</a></td>
                         <td>{{ $order->client->name }}</td>
-                        <td style="color:var(--mid-gray)">{{ $order->pickup_time }}</td>
-                        <td>{{ number_format($order->total, 0, ',', ' ') }} F</td>
+                        <td style="color:var(--mid-gray)">{{ $order->pickup_time ? $order->pickup_time->format('d/m H:i') : '—' }}</td>
+                        <td>{{ number_format($order->total_price, 0, ',', ' ') }} F</td>
                         <td>
-                            <span class="pc-status pc-status-{{ $order->status }}">{{ ucfirst($order->status) }}</span>
+                            <span class="pc-status pc-status-pending" data-order-status="{{ $order->id }}">{{ str_replace('_', ' ', ucfirst($order->status)) }}</span>
                         </td>
-                        <td>
-                            @if($order->status === 'reçue')
-                                <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
-                                    @csrf @method('PATCH')
-                                    <button class="pc-btn pc-btn-primary" style="padding:5px 10px;font-size:12px">Préparer</button>
-                                </form>
-                            @elseif($order->status === 'preparation')
-                                <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
-                                    @csrf @method('PATCH')
-                                    <button class="pc-btn" style="padding:5px 10px;font-size:12px;border-color:var(--sage);color:var(--sage)">Prête</button>
-                                </form>
-                            @elseif($order->status === 'prete')
-                                <form method="POST" action="{{ route('cook.orders.advance', $order) }}">
-                                    @csrf @method('PATCH')
-                                    <button class="pc-btn" style="padding:5px 10px;font-size:12px">Livrée</button>
-                                </form>
+                        <td data-order-action="{{ $order->id }}" data-advance-url="{{ route('cook.orders.advance', $order) }}">
+                            @if(in_array($order->status, ['recue', 'en_preparation', 'prete']))
+                                @php
+                                    $btnLabel = match($order->status) {
+                                        'recue' => 'Préparer',
+                                        'en_preparation' => 'Prête',
+                                        'prete' => 'Livrée',
+                                    };
+                                    $btnStyle = $order->status === 'recue'
+                                        ? 'pc-btn pc-btn-primary'
+                                        : ($order->status === 'en_preparation'
+                                            ? 'pc-btn'
+                                            : 'pc-btn');
+                                    $extraStyle = $order->status === 'en_preparation'
+                                        ? 'border-color:var(--sage);color:var(--sage)'
+                                        : '';
+                                @endphp
+                                <button
+                                    class="{{ $btnStyle }}"
+                                    style="padding:5px 10px;font-size:12px;{{ $extraStyle }}"
+                                    onclick="advanceOrder(this, '{{ route('cook.orders.advance', $order) }}')"
+                                >{{ $btnLabel }}</button>
                             @endif
                         </td>
                     </tr>
@@ -152,4 +190,39 @@
     div[style*="grid-template-columns:1.2fr 1fr"] { grid-template-columns: 1fr !important; }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+function advanceOrder(btn, url) {
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-TOKEN': csrf,
+        },
+        body: '_method=PATCH',
+    })
+    .then(res => {
+        if (res.ok || res.redirected) {
+            // Le temps réel mettra à jour le badge — on recharge juste la ligne
+            window.location.reload();
+        } else {
+            btn.disabled = false;
+            btn.textContent = 'Erreur';
+            console.error('[PetitChef] advanceOrder HTTP', res.status);
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.textContent = 'Erreur';
+        console.error('[PetitChef] advanceOrder:', err);
+    });
+}
+</script>
 @endpush

@@ -55,7 +55,7 @@ class AuthController extends Controller
         if (! Auth::attempt([
             'email' => $validated['email'],
             'password' => $validated['password'],
-        ], $request->boolean('remember'))) {
+        ], false)) {
             RateLimiter::hit($this->rateLimitKey($request, 'login'), 60);
 
             throw ValidationException::withMessages([
@@ -63,9 +63,20 @@ class AuthController extends Controller
             ]);
         }
 
+        // Vérifier le statut du compte après authentification
+        $user = Auth::user();
+        if (in_array($user->account_status ?? 'active', ['suspended', 'banned'], true)) {
+            Auth::logout();
+            $reason = $user->account_status_reason ? ' Raison : ' . $user->account_status_reason : '';
+            throw ValidationException::withMessages([
+                'email' => 'Votre compte a été ' . ($user->account_status === 'banned' ? 'banni' : 'suspendu') . '.' . $reason,
+            ]);
+        }
+
         RateLimiter::clear($this->rateLimitKey($request, 'login'));
 
         $request->session()->regenerate();
+        $request->session()->put('_bound_auth_user_id', (int) Auth::id());
 
         return redirect()->route('dashboard');
     }
@@ -109,6 +120,7 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('_bound_auth_user_id', (int) Auth::id());
         RateLimiter::clear($this->rateLimitKey($request, 'register'));
 
         return redirect()->route('dashboard')->with('status', 'Compte créé avec succès.');

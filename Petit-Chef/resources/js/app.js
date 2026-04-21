@@ -1,4 +1,2 @@
 import './bootstrap';
-import { initRealtimeOrderUpdates } from './realtime';
-
-initRealtimeOrderUpdates();
+import './realtime';

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ReportChanged;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -112,11 +113,53 @@ class AdminDashboardController extends Controller
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $adminNote = trim((string) ($validated['admin_note'] ?? '')) ?: null;
+
         DB::table('reports')->where('id', $reportId)->update([
             'status' => $validated['status'],
-            'admin_note' => trim((string) ($validated['admin_note'] ?? '')) ?: null,
+            'admin_note' => $adminNote,
             'updated_at' => now(),
         ]);
+
+        $report = DB::table('reports')
+            ->leftJoin('users as clients', 'clients.id', '=', 'reports.client_id')
+            ->leftJoin('users as cooks', 'cooks.id', '=', 'reports.cook_id')
+            ->leftJoin('dishes', 'dishes.id', '=', 'reports.dish_id')
+            ->select([
+                'reports.id',
+                'reports.client_id',
+                'reports.cook_id',
+                'reports.order_id',
+                'reports.type',
+                'reports.description',
+                'reports.status',
+                'reports.admin_note',
+                'reports.created_at',
+                'reports.updated_at',
+                'clients.name as client_name',
+                'cooks.name as cook_name',
+                'dishes.name as dish_name',
+            ])
+            ->where('id', $reportId)
+            ->first();
+
+        if ($report) {
+            event(new ReportChanged([
+                'id' => (int) $report->id,
+                'client_id' => (int) $report->client_id,
+                'cook_id' => (int) ($report->cook_id ?? 0),
+                'order_id' => $report->order_id,
+                'type' => (string) $report->type,
+                'description' => (string) $report->description,
+                'status' => (string) $report->status,
+                'admin_note' => $report->admin_note,
+                'client_name' => $report->client_name,
+                'cook_name' => $report->cook_name,
+                'dish_name' => $report->dish_name,
+                'created_at' => $report->created_at,
+                'updated_at' => $report->updated_at,
+            ], 'updated'));
+        }
 
         return back()->with('status', 'Signalement mis à jour.');
     }

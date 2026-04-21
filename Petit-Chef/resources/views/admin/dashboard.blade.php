@@ -95,7 +95,6 @@
     <div class="pc-card" style="padding:0;overflow:hidden;">
         <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
             <h2 style="margin:0;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Liste des commandes</h2>
-            <a href="{{ route('admin.api.stats', ['served_date' => $filters['served_date']]) }}" class="pc-btn">Voir API stats JSON</a>
         </div>
 
         @if ($orders->total() === 0)
@@ -120,7 +119,7 @@
                                 <td>{{ $order->client_name ?? '-' }}</td>
                                 <td>{{ $order->cook_name ?? '-' }}</td>
                                 <td>{{ number_format((float) $order->total_price, 0, ',', ' ') }} FCFA</td>
-                                <td>{{ $order->pickup_time ?? '-' }}</td>
+                                <td>{{ $order->pickup_time ? \Carbon\Carbon::parse($order->pickup_time)->format('d/m H:i') : '—' }}</td>
                                 <td><span class="pc-status pc-status-pending" data-order-status="{{ $order->id }}">{{ $statusLabels[$order->status] ?? $order->status }}</span></td>
                             </tr>
                         @endforeach
@@ -182,7 +181,7 @@
                     <textarea name="comment" class="pc-textarea" placeholder="Commentaire obligatoire si rejet..."></textarea>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                         <button class="pc-btn pc-btn-primary" type="submit" name="decision" value="approve">Valider</button>
-                        <button class="pc-btn" type="submit" name="decision" value="reject">Rejeter</button>
+                        <button class="pc-btn" type="submit" name="decision" value="reject" style="border-color:#e6b2ac;color:#c0392b">Rejeter</button>
                     </div>
                 </form>
             @empty
@@ -195,23 +194,23 @@
         <h2 style="margin:0;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Signalements clients</h2>
         <p class="pc-subtitle">Plats non conformes, litiges et suivi admin.</p>
 
-        <div style="display:grid;gap:10px;margin-top:12px;">
+        <div id="admin-reports-list" style="display:grid;gap:10px;margin-top:12px;">
             @forelse ($reports as $report)
-                <form class="pc-card" method="POST" action="{{ route('admin.reports.status', $report->id) }}" style="padding:12px;border-radius:12px;display:grid;gap:10px;">
+                <form class="pc-card" data-report-card="{{ $report->id }}" method="POST" action="{{ route('admin.reports.status', $report->id) }}" style="padding:12px;border-radius:12px;display:grid;gap:10px;">
                     @csrf
                     @method('PATCH')
                     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
                         <div>
-                            <div style="font-weight:600;">{{ ucfirst(str_replace('_', ' ', $report->type)) }}</div>
-                            <div style="font-size:12px;color:var(--mid-gray);">Client: {{ $report->client_name ?? '-' }} · Cuisinier: {{ $report->cook_name ?? '-' }}</div>
-                            <div style="font-size:12px;color:var(--mid-gray);">Commande: #{{ $report->order_ref ?? '-' }} · Plat: {{ $report->dish_name ?? '-' }}</div>
+                            <div style="font-weight:600;" data-report-type="{{ $report->id }}">{{ ucfirst(str_replace('_', ' ', $report->type)) }}</div>
+                            <div style="font-size:12px;color:var(--mid-gray);" data-report-meta="{{ $report->id }}">Client: {{ $report->client_name ?? '-' }} · Cuisinier: {{ $report->cook_name ?? '-' }}</div>
+                            <div style="font-size:12px;color:var(--mid-gray);" data-report-meta2="{{ $report->id }}">Commande: #{{ $report->order_ref ?? '-' }} · Plat: {{ $report->dish_name ?? '-' }}</div>
                         </div>
-                        <span class="pc-status pc-status-pending">{{ $reportLabels[$report->status] ?? $report->status }}</span>
+                        <span class="pc-status pc-status-pending" data-report-status="{{ $report->id }}">{{ $reportLabels[$report->status] ?? $report->status }}</span>
                     </div>
-                    <div style="font-size:13px;line-height:1.5;">{{ $report->description }}</div>
-                    <textarea name="admin_note" class="pc-textarea" placeholder="Note admin...">{{ $report->admin_note }}</textarea>
+                    <div style="font-size:13px;line-height:1.5;" data-report-description="{{ $report->id }}">{{ $report->description }}</div>
+                    <textarea name="admin_note" class="pc-textarea" data-report-admin-note-input="{{ $report->id }}" placeholder="Note admin...">{{ $report->admin_note }}</textarea>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                        <select name="status" class="pc-select" style="max-width:180px;">
+                        <select name="status" class="pc-select" data-report-status-select="{{ $report->id }}" style="max-width:180px;">
                             @foreach ($reportLabels as $reportKey => $reportLabel)
                                 <option value="{{ $reportKey }}" @selected($report->status === $reportKey)>{{ $reportLabel }}</option>
                             @endforeach
@@ -220,7 +219,7 @@
                     </div>
                 </form>
             @empty
-                <div style="color:var(--mid-gray);font-size:13px;">Aucun signalement à traiter.</div>
+                <div id="admin-reports-empty" style="color:var(--mid-gray);font-size:13px;">Aucun signalement à traiter.</div>
             @endforelse
         </div>
     </div>
