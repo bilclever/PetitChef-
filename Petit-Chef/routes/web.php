@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cook\DishController;
@@ -42,6 +42,10 @@ Route::middleware(['auth', 'role:client'])->group(function (): void {
     Route::patch('/panier/modifier', [OrderController::class, 'update'])->name('cart.update');
     Route::post('/panier/supprimer', [OrderController::class, 'remove'])->name('cart.remove');
     Route::post('/panier/commander', [OrderController::class, 'checkout'])->name('cart.checkout');
+    Route::get('/commande/{order}/suivi', [OrderController::class, 'track'])->name('orders.track');
+    Route::post('/commande/{order}/annuler', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('/commande/{order}/suivi', [OrderController::class, 'track'])->name('orders.track');
+    Route::post('/commande/{order}/annuler', [OrderController::class, 'cancel'])->name('orders.cancel');
 });
 
 // Routes Cuisinier

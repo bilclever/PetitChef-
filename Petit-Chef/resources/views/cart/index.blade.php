@@ -4,29 +4,33 @@
 <div style="margin-top: 0; padding-top: 0;">
 
 @if(!$items->isEmpty())
-    {{-- Résumé du panier --}}
-    <div style="max-width:600px;margin:0 auto 40px;">
-        <div class="pc-card" style="padding:20px;">
-            <h3 style="margin:0 0 16px;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Votre commande</h3>
+    {{-- Bouton de retour --}}
+    <div style="margin-bottom:20px;">
+        <a href="{{ route('menu') }}" class="pc-btn pc-btn-secondary" style="padding:8px 16px;font-size:12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;margin-right:4px;">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Retour au menu
+        </a>
+    </div>
 
-            <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
+    {{-- Layout principal avec deux colonnes --}}
+    <div style="display:grid;grid-template-columns:320px 1fr;gap:24px;align-items:start;">
+        {{-- Colonne de gauche : Formulaire de confirmation --}}
+        <div style="position:sticky;top:80px;">
+            <div class="pc-card" style="padding:20px;">
+                <h3 style="margin:0 0 16px;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Confirmer la commande</h3>
+
                 @php($total = 0)
                 @foreach($items as $item)
                     @php($total += $item['subtotal'])
-                    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-                        <div style="flex:1;">
-                            <div style="font-weight:500;font-size:14px;">{{ $item['dish']->name }}</div>
-                            <div style="font-size:12px;color:var(--mid-gray);">{{ $item['quantity'] }} × {{ number_format($item['dish']->price, 0, ',', ' ') }} FCFA</div>
-                        </div>
-                        <div style="font-weight:600;color:var(--terracotta);">{{ number_format($item['subtotal'], 0, ',', ' ') }} FCFA</div>
-                    </div>
                 @endforeach
-            </div>
 
-            <div style="border-top:2px solid var(--border);padding-top:12px;">
-                <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;margin-bottom:16px;">
-                    <span>Total</span>
-                    <span style="color:var(--terracotta);">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                <div style="border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;">
+                        <span>Total</span>
+                        <span style="color:var(--terracotta);">{{ number_format($total, 0, ',', ' ') }} FCFA</span>
+                    </div>
                 </div>
 
                 <form method="POST" action="{{ route('cart.checkout') }}">
@@ -47,13 +51,39 @@
             </div>
         </div>
 
-        {{-- Lien vers la gestion détaillée du panier --}}
-        <div style="text-align:center;margin-top:20px;">
-            <a href="#panier-detail" class="pc-btn pc-btn-secondary" style="padding:8px 16px;font-size:12px;" onclick="document.getElementById('panier-detail').scrollIntoView({behavior:'smooth'})">
-                Gérer le panier
-            </a>
-        </div>
-    </div>
+        {{-- Colonne de droite : Contenu du panier --}}
+        <div>
+            {{-- Liste des plats du panier --}}
+            <div class="pc-card" style="padding:20px;margin-bottom:20px;">
+                <h3 style="margin:0 0 16px;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Votre commande</h3>
+
+                <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
+                    @php($total = 0)
+                    @foreach($items as $item)
+                        @php($total += $item['subtotal'])
+                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+                            <div style="flex:1;">
+                                <div style="font-weight:500;font-size:14px;">{{ $item['dish']->name }}</div>
+                                <div style="font-size:12px;color:var(--mid-gray);">{{ $item['quantity'] }} × {{ number_format($item['dish']->price, 0, ',', ' ') }} FCFA</div>
+                            </div>
+                            <div style="font-weight:600;color:var(--terracotta);">{{ number_format($item['subtotal'], 0, ',', ' ') }} FCFA</div>
+                        </div>
+                    @endforeach
+                </div>
+
+                {{-- Lien vers la gestion détaillée du panier --}}
+                <div style="text-align:center;margin-top:20px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                    <a href="#panier-detail" class="pc-btn pc-btn-secondary" style="padding:8px 16px;font-size:12px;" onclick="document.getElementById('panier-detail').scrollIntoView({behavior:'smooth'})">
+                        Gérer le panier
+                    </a>
+                    <a href="{{ route('client.dashboard') }}" class="pc-btn pc-btn-secondary" style="padding:8px 16px;font-size:12px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;margin-right:4px;">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Historique des commandes
+                    </a>
+                </div>
+            </div>
 
     {{-- Section : Ajouter d'autres plats --}}
     <div style="margin-bottom:40px;">
@@ -186,6 +216,24 @@
                 </tbody>
             </table>
         </div>
+    </div>
+
+    {{-- Navigation bas de page --}}
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);text-align:center;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <a href="{{ route('menu') }}" class="pc-btn pc-btn-secondary" style="padding:10px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;margin-right:6px;">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Continuer mes achats
+        </a>
+        <a href="{{ route('client.dashboard') }}" class="pc-btn pc-btn-primary" style="padding:10px 20px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;display:inline;margin-right:6px;">
+                <path d="M3 12a9 9 0 1 1 18 0 9 9 0 0 1-18 0z"/>
+                <path d="M3.6 9h16.8M3.6 15h16.8"/>
+                <path d="M11.5 3c1 2.333 1.5 5.167 1.5 9s-.5 6.667-1.5 9M12.5 3c-1 2.333-1.5 5.167-1.5 9s.5 6.667 1.5 9"/>
+            </svg>
+            Mes commandes
+        </a>
     </div>
 @endif
 </div>

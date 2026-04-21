@@ -165,4 +165,84 @@ class OrderController extends Controller
             'items' => collect(session('cart', []))->map(fn ($quantity, $dishId) => null),
         ]);
     }
+    public function track(Order $order): View
+    {
+        // Vérifier que l'utilisateur est propriétaire de la commande
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $order->load(['order_dishes.dish', 'user']);
+
+        // Définir les étapes du suivi selon le statut
+        $steps = $this->getTrackingSteps($order);
+
+        return view('orders.track', compact('order', 'steps'));
+    }
+
+    public function cancel(Order $order): RedirectResponse
+    {
+        // Vérifier que l'utilisateur est propriétaire de la commande
+        if ($order->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        // Ne permettre l'annulation que si la commande est en attente
+        if ($order->status !== 'pending') {
+            return back()->withErrors(['order' => 'Cette commande ne peut plus être annulée.']);
+        }
+
+        // Remettre les quantités en stock
+        foreach ($order->order_dishes as $orderDish) {
+            $orderDish->dish->increment('quantity', $orderDish->quantity);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return back()->with('status', 'Commande annulée avec succès.');
+    }
+
+    private function getTrackingSteps(Order $order): array
+    {
+        $steps = [
+            [
+                'status' => 'pending',
+                'title' => 'Commande reçue',
+                'description' => 'Votre commande a été enregistrée et est en attente de confirmation.',
+                'icon' => '??',
+                'completed' => in_array($order->status, ['pending', 'confirmed', 'ready', 'delivered']),
+                'current' => $order->status === 'pending',
+                'timestamp' => $order->created_at,
+            ],
+            [
+                'status' => 'confirmed',
+                'title' => 'Commande confirmée',
+                'description' => 'Votre commande a été confirmée par le cuisinier et est en cours de préparation.',
+                'icon' => '?',
+                'completed' => in_array($order->status, ['confirmed', 'ready', 'delivered']),
+                'current' => $order->status === 'confirmed',
+                'timestamp' => $order->status === 'confirmed' ? $order->updated_at : null,
+            ],
+            [
+                'status' => 'ready',
+                'title' => 'Prêt à récupérer',
+                'description' => 'Votre commande est prête et vous pouvez venir la récupérer.',
+                'icon' => '???',
+                'completed' => in_array($order->status, ['ready', 'delivered']),
+                'current' => $order->status === 'ready',
+                'timestamp' => $order->status === 'ready' ? $order->updated_at : null,
+            ],
+            [
+                'status' => 'delivered',
+                'title' => 'Livré',
+                'description' => 'Votre commande a été livrée avec succès.',
+                'icon' => '??',
+                'completed' => $order->status === 'delivered',
+                'current' => $order->status === 'delivered',
+                'timestamp' => $order->status === 'delivered' ? $order->updated_at : null,
+            ],
+        ];
+
+        return $steps;
+    }
 }
