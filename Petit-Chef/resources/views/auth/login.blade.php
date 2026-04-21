@@ -33,10 +33,6 @@
                 <label>Website</label>
                 <input name="website" type="text" tabindex="-1" autocomplete="off">
             </div>
-            <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mid-gray);">
-                <input type="checkbox" name="remember" value="1">
-                Se souvenir de moi
-            </label>
             <button type="submit" class="pc-btn pc-btn-primary" style="width:100%;padding:11px;">Connexion</button>
         </form>
         <p style="margin-top:14px;font-size:12px;color:var(--mid-gray);">
