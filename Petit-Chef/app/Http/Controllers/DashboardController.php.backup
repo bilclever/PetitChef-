@@ -27,6 +27,12 @@ class DashboardController extends Controller
             return $order->dishes->sum('pivot.quantity');
         });
 
+        // Récupérer les commandes de l'utilisateur avec leurs relations
+        $orders = $user->orders()
+            ->with(['order_dishes.dish'])
+            ->latest()
+            ->get();
+
         $query = \App\Models\Dish::available()->with('cook');
 
         // Filtre par prix maximum
