@@ -6,6 +6,7 @@ use App\Events\ReportChanged;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -42,7 +43,7 @@ class ReportController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'order_id'    => ['required', 'exists:orders,id'],
@@ -91,6 +92,14 @@ class ReportController extends Controller
             'created_at' => now()->toDateTimeString(),
             'updated_at' => now()->toDateTimeString(),
         ], 'created'));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => '✅ Signalement envoyé. L\'administrateur va examiner votre demande.',
+                'report_id' => (int) $reportId,
+            ]);
+        }
 
         return redirect()->route('client.orders.history')
             ->with('status', '✅ Signalement envoyé. L\'administrateur va examiner votre demande.');

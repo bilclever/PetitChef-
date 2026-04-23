@@ -35,13 +35,19 @@ class OrderStatusUpdated implements ShouldBroadcastNow
 
     public function broadcastWith(): array
     {
+        $orderId = (int) data_get($this->order, 'id');
+
         return [
-            'order_id' => (int) data_get($this->order, 'id'),
+            'order_id' => $orderId,
             'cook_id' => (int) data_get($this->order, 'cook_id'),
             'client_id' => (int) data_get($this->order, 'client_id'),
+            'client_name' => (string) (data_get($this->order, 'client.name') ?? ''),
             'status' => (string) data_get($this->order, 'status'),
             'pickup_time' => data_get($this->order, 'pickup_time'),
             'total_price' => data_get($this->order, 'total_price'),
+            'created_at' => data_get($this->order, 'created_at'),
+            'order_url' => $orderId > 0 ? route('cook.orders.show', ['order' => $orderId]) : null,
+            'advance_url' => $orderId > 0 ? route('cook.orders.advance', ['order' => $orderId]) : null,
         ];
     }
 }

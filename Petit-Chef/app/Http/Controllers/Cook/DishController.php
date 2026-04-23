@@ -82,6 +82,14 @@ class DishController extends Controller
 
         Dish::create($data);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Plat publié !',
+                'redirect_to' => route('cook.dashboard'),
+            ]);
+        }
+
         return redirect()->route('cook.dashboard')->with('status', 'Plat publié !');
     }
 
@@ -121,10 +129,20 @@ class DishController extends Controller
 
         $dish->update($data);
 
+        event(new \App\Events\DishUpdated($dish->fresh()));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Plat modifié !',
+                'redirect_to' => route('cook.dashboard'),
+            ]);
+        }
+
         return redirect()->route('cook.dashboard')->with('status', 'Plat modifié !');
     }
 
-    public function destroy(int $dish): RedirectResponse
+    public function destroy(int $dish, Request $request): RedirectResponse
     {
         $dish = $this->loadDishOr404($dish);
         $this->authorizeOwner($dish);
@@ -138,6 +156,8 @@ class DishController extends Controller
         $dish = $this->loadDishOr404($dish);
         $this->authorizeOwner($dish);
         $dish->update(['is_of_day' => ! $dish->is_of_day]);
+
+        event(new \App\Events\DishUpdated($dish->fresh()));
 
         return back()->with('status', $dish->is_of_day ? '⭐ Plat du jour activé' : 'Plat du jour retiré');
     }

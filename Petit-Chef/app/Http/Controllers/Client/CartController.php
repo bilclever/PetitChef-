@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Dish;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
@@ -23,7 +24,7 @@ class CartController extends Controller
         ]);
     }
 
-    public function add(Request $request, int $dish): RedirectResponse
+    public function add(Request $request, int $dish): RedirectResponse|JsonResponse
     {
         if (! Schema::hasTable('dishes')) {
             return back()->withErrors(['cart' => 'Le module plats nest pas disponible.']);
@@ -72,10 +73,20 @@ class CartController extends Controller
 
         session(['cart' => $cart]);
 
+        if ($request->wantsJson()) {
+            $totals = $this->computeTotals($cart);
+            return response()->json([
+                'success' => true,
+                'message' => 'Plat ajouté au panier.',
+                'cart' => $cart,
+                'totals' => $totals,
+            ]);
+        }
+
         return back()->with('status', 'Plat ajoute au panier.');
     }
 
-    public function update(Request $request, int $dish): RedirectResponse
+    public function update(Request $request, int $dish): RedirectResponse|JsonResponse
     {
         $payload = $request->validate([
             'quantity' => ['required', 'integer', 'min:0', 'max:20'],
@@ -107,10 +118,20 @@ class CartController extends Controller
 
         session(['cart' => $cart]);
 
+        if ($request->wantsJson()) {
+            $totals = $this->computeTotals($cart);
+            return response()->json([
+                'success' => true,
+                'message' => 'Panier mis à jour.',
+                'cart' => $cart,
+                'totals' => $totals,
+            ]);
+        }
+
         return back()->with('status', 'Panier mis a jour.');
     }
 
-    public function remove(int $dish): RedirectResponse
+    public function remove(int $dish, Request $request): RedirectResponse|JsonResponse
     {
         $cart = $this->getCart();
 
@@ -122,12 +143,31 @@ class CartController extends Controller
 
         session(['cart' => $cart]);
 
+        if ($request->wantsJson()) {
+            $totals = $this->computeTotals($cart);
+            return response()->json([
+                'success' => true,
+                'message' => 'Article retiré du panier.',
+                'cart' => $cart,
+                'totals' => $totals,
+            ]);
+        }
+
         return back()->with('status', 'Article retire du panier.');
     }
 
-    public function clear(): RedirectResponse
+    public function clear(Request $request): RedirectResponse|JsonResponse
     {
         session()->forget('cart');
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Panier vidé.',
+                'cart' => ['cook_id' => null, 'items' => []],
+                'totals' => ['subtotal' => 0, 'items_count' => 0],
+            ]);
+        }
 
         return back()->with('status', 'Panier vide.');
     }

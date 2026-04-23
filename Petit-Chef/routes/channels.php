@@ -23,3 +23,8 @@ Broadcast::channel('admin.stream', function ($user): bool {
 Broadcast::channel('client.{clientId}', function ($user, int $clientId): bool {
     return (int) $user->id === $clientId && $user->role === 'client';
 });
+
+// Canal public pour les mises à jour du menu (statut boutique, stock)
+Broadcast::channel('menu.updates', function ($user): bool {
+    return true; // accessible à tous les utilisateurs connectés
+});

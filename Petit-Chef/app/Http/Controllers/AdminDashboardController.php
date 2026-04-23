@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Events\ReportChanged;
+use App\Events\UserChanged;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\JsonResponse;
@@ -97,6 +98,30 @@ class AdminDashboardController extends Controller
 
         $user->save();
 
+        event(new UserChanged([
+            'id' => (int) $user->id,
+            'name' => (string) $user->name,
+            'email' => (string) $user->email,
+            'phone' => $user->phone,
+            'role' => (string) $user->role,
+            'approval_status' => (string) $user->approval_status,
+            'account_status' => (string) ($user->account_status ?? 'active'),
+            'account_status_reason' => $user->account_status_reason,
+            'updated_at' => $user->updated_at?->toDateTimeString(),
+            'created_at' => $user->created_at?->toDateTimeString(),
+        ], 'approval_updated'));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $decision === 'approve'
+                    ? 'Cuisinier validé avec succès.'
+                    : 'Cuisinier rejeté.',
+                'user_id' => (int) $user->id,
+                'approval_status' => (string) $user->approval_status,
+            ]);
+        }
+
         return back()->with('status', $decision === 'approve'
             ? 'Cuisinier validé avec succès.'
             : 'Cuisinier rejeté.');
@@ -140,7 +165,7 @@ class AdminDashboardController extends Controller
                 'cooks.name as cook_name',
                 'dishes.name as dish_name',
             ])
-            ->where('id', $reportId)
+            ->where('reports.id', $reportId)
             ->first();
 
         if ($report) {
@@ -159,6 +184,16 @@ class AdminDashboardController extends Controller
                 'created_at' => $report->created_at,
                 'updated_at' => $report->updated_at,
             ], 'updated'));
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Signalement mis à jour.',
+                'report_id' => (int) $reportId,
+                'status' => (string) $validated['status'],
+                'admin_note' => $adminNote,
+            ]);
         }
 
         return back()->with('status', 'Signalement mis à jour.');
@@ -180,6 +215,28 @@ class AdminDashboardController extends Controller
         $user->account_status = $validated['account_status'];
         $user->account_status_reason = trim((string) ($validated['account_status_reason'] ?? '')) ?: null;
         $user->save();
+
+        event(new UserChanged([
+            'id' => (int) $user->id,
+            'name' => (string) $user->name,
+            'email' => (string) $user->email,
+            'phone' => $user->phone,
+            'role' => (string) $user->role,
+            'approval_status' => (string) $user->approval_status,
+            'account_status' => (string) $user->account_status,
+            'account_status_reason' => $user->account_status_reason,
+            'updated_at' => $user->updated_at?->toDateTimeString(),
+            'created_at' => $user->created_at?->toDateTimeString(),
+        ], 'account_status_updated'));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Statut utilisateur mis à jour.',
+                'user_id' => (int) $user->id,
+                'account_status' => (string) $user->account_status,
+            ]);
+        }
 
         return back()->with('status', 'Statut utilisateur mis à jour.');
     }
