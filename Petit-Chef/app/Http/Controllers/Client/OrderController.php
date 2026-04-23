@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Dish;
 use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrderController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $data = $request->validate([
             'pickup_time' => ['nullable', 'date', 'after:now'],
@@ -132,11 +133,21 @@ class OrderController extends Controller
 
         session()->forget('cart');
         event(new OrderStatusUpdated($order));
+        event(new \App\Events\NewOrderReceived($order));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Commande créée avec succès.',
+                'order_id' => (int) $order->id,
+                'redirect_to' => route('menu'),
+            ]);
+        }
 
         return redirect()->route('menu')->with('status', 'Commande creee avec succes.');
     }
 
-    public function pay(Order $order): RedirectResponse
+    public function pay(Order $order, Request $request): RedirectResponse|JsonResponse
     {
         abort_unless((int) $order->client_id === (int) auth()->id(), 403);
 
@@ -151,6 +162,16 @@ class OrderController extends Controller
         ]);
 
         event(new OrderStatusUpdated($order));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Paiement enregistré.',
+                'order_id' => (int) $order->id,
+                'is_paid' => true,
+                'payment_reference' => (string) $order->payment_reference,
+            ]);
+        }
 
         return back()->with('status', 'Paiement enregistre.');
     }

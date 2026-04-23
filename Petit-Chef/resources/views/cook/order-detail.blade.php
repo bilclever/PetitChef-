@@ -152,13 +152,16 @@ function advanceOrder(btn, url) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'Accept': 'application/json',
             'X-CSRF-TOKEN': csrf,
         },
         body: '_method=PATCH',
     })
-    .then(res => {
-        if (res.ok || res.redirected) {
-            window.location.reload();
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Succès', data.message);
+            setTimeout(() => window.location.reload(), 800);
         } else {
             btn.disabled = false;
             btn.textContent = 'Erreur';

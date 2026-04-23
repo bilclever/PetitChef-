@@ -1,9 +1,11 @@
 <?php
 
-$uri = urldecode(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/');
+$publicPath = getcwd();
+$uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '');
 
-if ($uri !== '/' && file_exists(__DIR__.'/public'.$uri)) {
+// Let the built-in server handle existing static files.
+if ($uri !== '/' && file_exists($publicPath.$uri)) {
     return false;
 }
 
-require_once __DIR__.'/public/index.php';
+require_once $publicPath.'/index.php';

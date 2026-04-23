@@ -8,34 +8,52 @@
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
 
-        {{-- Statut boutique --}}
-        @php $cook = auth()->user(); @endphp
-        <div style="display:flex;align-items:center;gap:8px;background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
-            @if($cook->isShopOpen())
-                <span style="width:8px;height:8px;border-radius:50%;background:#2ecc71;display:inline-block"></span>
-                <span style="font-size:12px;font-weight:600;color:var(--sage)">Ouvert</span>
-            @else
-                <span style="width:8px;height:8px;border-radius:50%;background:#c0392b;display:inline-block"></span>
-                <span style="font-size:12px;font-weight:600;color:#c0392b">Fermé</span>
-            @endif
+        {{-- Panneau boutique cohérent --}}
+        @php
+            $cook = auth()->user();
+            $isOpen = $cook->isShopOpen();
+            $closesAt = $cook->shop_closes_at;
+            // Statut textuel cohérent
+            if ($isOpen && $closesAt) {
+                $shopStatusText = 'Ouvert · clôture à ' . $closesAt;
+            } elseif ($isOpen) {
+                $shopStatusText = 'Ouvert';
+            } else {
+                $shopStatusText = $closesAt ? 'Fermé (clôture à ' . $closesAt . ')' : 'Fermé manuellement';
+            }
+        @endphp
+
+        {{-- Badge statut --}}
+        <div id="shop-status-badge" style="display:flex;align-items:center;gap:8px;background:var(--warm-white);border:1px solid var(--border);border-radius:10px;padding:6px 12px">
+            <span id="shop-dot" style="width:8px;height:8px;border-radius:50%;background:{{ $isOpen ? '#2ecc71' : '#c0392b' }};display:inline-block;transition:background .3s"></span>
+            <span id="shop-label" style="font-size:12px;font-weight:600;color:{{ $isOpen ? 'var(--sage)' : '#c0392b' }}">
+                {{ $shopStatusText }}
+            </span>
         </div>
 
-        {{-- Toggle ouvert/fermé --}}
-        <form method="POST" action="{{ route('cook.shop.toggle') }}">
-            @csrf @method('PATCH')
-            <button type="submit" class="pc-btn {{ $cook->isShopOpen() ? '' : 'pc-btn-primary' }}" style="padding:7px 14px">
-                {{ $cook->isShopOpen() ? '🔴 Fermer ma boutique' : '🟢 Ouvrir ma boutique' }}
-            </button>
-        </form>
+        {{-- Bouton toggle --}}
+        <button id="shop-toggle-btn"
+            onclick="toggleShop(this)"
+            data-url="{{ route('cook.shop.toggle') }}"
+            data-is-open="{{ $isOpen ? '1' : '0' }}"
+            class="pc-btn {{ $isOpen ? '' : 'pc-btn-primary' }}"
+            style="padding:7px 14px">
+            {{ $isOpen ? '🔴 Fermer maintenant' : '🟢 Ouvrir maintenant' }}
+        </button>
 
-        {{-- Heure de clôture --}}
-        <form method="POST" action="{{ route('cook.shop.closing-time') }}" style="display:flex;gap:6px;align-items:center">
+        {{-- Heure de clôture automatique --}}
+        <form id="closing-time-form" method="POST" action="{{ route('cook.shop.closing-time') }}"
+            style="display:flex;gap:6px;align-items:center"
+            onsubmit="submitClosingTime(event, this)">
             @csrf @method('PATCH')
-            <input type="time" name="shop_closes_at" class="pc-input"
-                value="{{ $cook->shop_closes_at ?? '' }}"
+            <input type="time" name="shop_closes_at" id="shop-closes-at" class="pc-input"
+                value="{{ $closesAt ?? '' }}"
                 style="width:110px;padding:7px 10px"
-                title="Heure de clôture automatique">
-            <button type="submit" class="pc-btn" style="padding:7px 10px;white-space:nowrap">⏰ Définir clôture</button>
+                title="Clôture automatique à cette heure">
+            <button type="submit" class="pc-btn" style="padding:7px 10px;white-space:nowrap">⏰ Appliquer</button>
+            @if($closesAt)
+            <button type="button" onclick="clearClosingTime()" class="pc-btn" style="padding:7px 10px;color:#c0392b;border-color:#e6b2ac" title="Supprimer l'heure de clôture">✕</button>
+            @endif
         </form>
 
         <a href="{{ route('menu') }}" class="pc-btn" style="padding:7px 14px">Voir le menu</a>
@@ -87,9 +105,9 @@
                 <thead>
                     <tr><th>N°</th><th>Client</th><th>Récup.</th><th>Total</th><th>Statut</th><th></th></tr>
                 </thead>
-                <tbody>
+                <tbody data-cook-orders-body>
                     @forelse($orders as $order)
-                    <tr>
+                    <tr data-order-row="{{ $order->id }}">
                         <td><a href="{{ route('cook.orders.show', $order) }}" style="color:var(--terracotta);text-decoration:none;font-weight:600">#{{ $order->id }}</a></td>
                         <td>{{ $order->client->name }}</td>
                         <td style="color:var(--mid-gray)">{{ $order->pickup_time ? $order->pickup_time->format('d/m H:i') : '—' }}</td>
@@ -123,7 +141,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="6" style="text-align:center;color:var(--mid-gray);padding:24px">Aucune commande en cours</td></tr>
+                    <tr data-cook-orders-empty><td colspan="6" style="text-align:center;color:var(--mid-gray);padding:24px">Aucune commande en cours</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -194,35 +212,103 @@
 
 @push('scripts')
 <script>
-function advanceOrder(btn, url) {
+// ─── Toggle boutique ──────────────────────────────────────────────────────────
+function toggleShop(btn) {
     btn.disabled = true;
-    btn.textContent = '…';
-
+    const url = btn.dataset.url;
     const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-TOKEN': csrf,
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
         body: '_method=PATCH',
     })
-    .then(res => {
-        if (res.ok || res.redirected) {
-            // Le temps réel mettra à jour le badge — on recharge juste la ligne
-            window.location.reload();
-        } else {
-            btn.disabled = false;
-            btn.textContent = 'Erreur';
-            console.error('[PetitChef] advanceOrder HTTP', res.status);
+    .then(r => r.json())
+    .then(data => {
+        const isOpen = data.is_open;
+        const closesAt = document.getElementById('shop-closes-at')?.value || null;
+
+        // Badge
+        const dot = document.getElementById('shop-dot');
+        const label = document.getElementById('shop-label');
+        if (dot) dot.style.background = isOpen ? '#2ecc71' : '#c0392b';
+        if (label) {
+            label.style.color = isOpen ? 'var(--sage)' : '#c0392b';
+            if (isOpen && closesAt)      label.textContent = 'Ouvert · clôture à ' + closesAt;
+            else if (isOpen)             label.textContent = 'Ouvert';
+            else if (closesAt)           label.textContent = 'Fermé (clôture à ' + closesAt + ')';
+            else                         label.textContent = 'Fermé manuellement';
         }
-    })
-    .catch(err => {
+
+        // Bouton
+        btn.dataset.isOpen = isOpen ? '1' : '0';
+        btn.className = 'pc-btn' + (isOpen ? '' : ' pc-btn-primary');
+        btn.textContent = isOpen ? '🔴 Fermer maintenant' : '🟢 Ouvrir maintenant';
         btn.disabled = false;
-        btn.textContent = 'Erreur';
-        console.error('[PetitChef] advanceOrder:', err);
+
+        if (window.pcShowToast) window.pcShowToast(
+            isOpen ? '🟢 Boutique ouverte' : '🔴 Boutique fermée',
+            data.message, isOpen ? 'success' : 'warning'
+        );
+    })
+    .catch(() => { btn.disabled = false; });
+}
+
+// ─── Heure de clôture ─────────────────────────────────────────────────────────
+function submitClosingTime(e, form) {
+    e.preventDefault();
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const time = document.getElementById('shop-closes-at').value;
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        body: '_method=PATCH&shop_closes_at=' + encodeURIComponent(time),
+    })
+    .then(r => r.json())
+    .then(data => {
+        const label = document.getElementById('shop-label');
+        const isOpen = document.getElementById('shop-toggle-btn')?.dataset.isOpen === '1';
+        if (label) {
+            if (isOpen && time)      label.textContent = 'Ouvert · clôture à ' + time;
+            else if (isOpen)         label.textContent = 'Ouvert';
+            else if (time)           label.textContent = 'Fermé (clôture à ' + time + ')';
+            else                     label.textContent = 'Fermé manuellement';
+        }
+        if (window.pcShowToast) window.pcShowToast('⏰ Clôture mise à jour', data.message, 'info');
     });
+}
+
+function clearClosingTime() {
+    document.getElementById('shop-closes-at').value = '';
+    const form = document.getElementById('closing-time-form');
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        body: '_method=PATCH&shop_closes_at=',
+    })
+    .then(r => r.json())
+    .then(data => {
+        const label = document.getElementById('shop-label');
+        const isOpen = document.getElementById('shop-toggle-btn')?.dataset.isOpen === '1';
+        if (label) label.textContent = isOpen ? 'Ouvert' : 'Fermé manuellement';
+        if (window.pcShowToast) window.pcShowToast('⏰ Clôture supprimée', data.message, 'info');
+    });
+}
+
+// ─── Avancer statut commande ──────────────────────────────────────────────────
+function advanceOrder(btn, url) {
+    btn.disabled = true;
+    btn.textContent = '…';
+    const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRF-TOKEN': csrf },
+        body: '_method=PATCH',
+    })
+    .then(res => { if (res.ok || res.redirected) window.location.reload(); else { btn.disabled = false; btn.textContent = 'Erreur'; } })
+    .catch(() => { btn.disabled = false; btn.textContent = 'Erreur'; });
 }
 </script>
 @endpush

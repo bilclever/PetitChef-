@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\UserChanged;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -117,6 +118,21 @@ class AuthController extends Controller
             'profile_photo_path' => $profilePhotoPath,
             'password' => Hash::make($validated['password']),
         ]);
+
+        if ($user->role === 'cook' && $user->approval_status === 'pending') {
+            event(new UserChanged([
+                'id' => (int) $user->id,
+                'name' => (string) $user->name,
+                'email' => (string) $user->email,
+                'phone' => $user->phone,
+                'role' => (string) $user->role,
+                'approval_status' => (string) $user->approval_status,
+                'account_status' => (string) ($user->account_status ?? 'active'),
+                'account_status_reason' => $user->account_status_reason,
+                'created_at' => $user->created_at?->toDateTimeString(),
+                'updated_at' => $user->updated_at?->toDateTimeString(),
+            ], 'registered_pending'));
+        }
 
         Auth::login($user);
         $request->session()->regenerate();

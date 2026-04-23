@@ -134,9 +134,9 @@
         <h2 style="margin:0;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Validation cuisiniers</h2>
         <p class="pc-subtitle" style="margin-top:4px;">Profils en attente de validation.</p>
 
-        <div style="display:grid;gap:10px;margin-top:12px;">
+        <div id="admin-pending-cooks-quick" style="display:grid;gap:10px;margin-top:12px;">
             @forelse ($pendingCooks as $cook)
-                <div class="pc-card" style="padding:10px;border-radius:12px;">
+                <div class="pc-card" data-pending-cook-quick="{{ $cook->id }}" style="padding:10px;border-radius:12px;">
                     <div style="font-weight:600;">{{ $cook->name }}</div>
                     <div style="font-size:12px;color:var(--mid-gray);">{{ $cook->email }}</div>
                     <div style="display:flex;gap:8px;margin-top:8px;">
@@ -155,7 +155,7 @@
                     </div>
                 </div>
             @empty
-                <div style="color:var(--mid-gray);font-size:13px;">Aucun profil en attente.</div>
+                <div id="admin-pending-cooks-quick-empty" style="color:var(--mid-gray);font-size:13px;">Aucun profil en attente.</div>
             @endforelse
         </div>
     </aside>
@@ -166,9 +166,9 @@
         <h2 style="margin:0;font-family:'Fraunces',serif;font-size:18px;font-weight:500;">Validation profils cuisiniers</h2>
         <p class="pc-subtitle">Valider ou rejeter un profil avec commentaire.</p>
 
-        <div style="display:grid;gap:10px;margin-top:12px;">
+        <div id="admin-pending-cooks-detailed" style="display:grid;gap:10px;margin-top:12px;">
             @forelse ($pendingCooks as $cook)
-                <form class="pc-card" method="POST" action="{{ route('admin.cooks.status', $cook) }}" style="padding:12px;border-radius:12px;display:grid;gap:10px;">
+                <form class="pc-card" data-pending-cook-detailed="{{ $cook->id }}" method="POST" action="{{ route('admin.cooks.status', $cook) }}" style="padding:12px;border-radius:12px;display:grid;gap:10px;">
                     @csrf
                     @method('PATCH')
                     <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;">
@@ -185,7 +185,7 @@
                     </div>
                 </form>
             @empty
-                <div style="color:var(--mid-gray);font-size:13px;">Aucun profil en attente.</div>
+                <div id="admin-pending-cooks-detailed-empty" style="color:var(--mid-gray);font-size:13px;">Aucun profil en attente.</div>
             @endforelse
         </div>
     </div>
@@ -278,12 +278,12 @@
             </thead>
             <tbody>
                 @forelse ($users as $user)
-                    <tr>
+                    <tr data-admin-user-row="{{ $user->id }}">
                         <td>{{ $user->name }}</td>
                         <td>{{ ucfirst($user->role) }}</td>
                         <td>{{ $user->email }}</td>
                         <td>
-                            <span class="pc-status pc-status-{{ $user->account_status === 'active' ? 'approved' : 'rejected' }}">
+                            <span class="pc-status pc-status-{{ $user->account_status === 'active' ? 'approved' : 'rejected' }}" data-admin-user-status-label="{{ $user->id }}">
                                 {{ $accountStatusLabels[$user->account_status] ?? $user->account_status }}
                             </span>
                         </td>
@@ -291,12 +291,12 @@
                             <form method="POST" action="{{ route('admin.users.status', $user) }}" style="display:grid;gap:8px;max-width:260px;">
                                 @csrf
                                 @method('PATCH')
-                                <select name="account_status" class="pc-select">
+                                <select name="account_status" class="pc-select" data-admin-user-status-select="{{ $user->id }}">
                                     @foreach ($accountStatusLabels as $accountKey => $accountLabel)
                                         <option value="{{ $accountKey }}" @selected($user->account_status === $accountKey)>{{ $accountLabel }}</option>
                                     @endforeach
                                 </select>
-                                <input name="account_status_reason" class="pc-input" placeholder="Raison (optionnelle)" value="{{ $user->account_status_reason }}">
+                                <input name="account_status_reason" class="pc-input" data-admin-user-status-reason="{{ $user->id }}" placeholder="Raison (optionnelle)" value="{{ $user->account_status_reason }}">
                                 <button class="pc-btn pc-btn-primary" type="submit">Enregistrer</button>
                             </form>
                         </td>
