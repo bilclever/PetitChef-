@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone')->unique()->nullable();
-            $table->string('role')->default('client');
+            $table->enum('role', ['admin', 'cook', 'client'])->default('client');
             $table->string('approval_status')->default('approved');
             $table->string('profile_photo_path')->nullable();
             $table->text('rejection_reason')->nullable();

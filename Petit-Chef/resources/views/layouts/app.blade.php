@@ -1,5 +1,13 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html
+    lang="fr"
+    @auth
+        data-order-ids="{{ isset($realtimeOrderIds) ? implode(',', $realtimeOrderIds) : '' }}"
+        data-kitchen-channel="{{ isset($realtimeKitchenId) ? $realtimeKitchenId : '' }}"
+        data-auth-role="{{ auth()->user()->role }}"
+        data-auth-id="{{ auth()->id() }}"
+    @endauth
+>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +19,7 @@
         @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
             @vite(['resources/css/app.css', 'resources/js/app.js'])
         @endif
+        @stack('styles')
         <style>
             :root {
                 --cream: #F9F5EE;
@@ -223,28 +232,74 @@
                 .pc-main { padding: 18px 12px 24px; }
                 .pc-title { font-size: 26px; }
             }
+
+            @keyframes pcSlideIn {
+                from { opacity: 0; transform: translateX(20px); }
+                to   { opacity: 1; transform: translateX(0); }
+            }
         </style>
     </head>
     <body>
         <div class="pc-shell">
             <div class="pc-bg"></div>
             <header class="pc-nav">
-                <a href="{{ route('dashboard') }}" class="pc-brand">petit<span>Chef</span></a>
-                <nav class="pc-nav-links">
-                        @auth
-                        <a href="{{ route('profile.edit') }}" class="pc-btn">Mon profil</a>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                            <button class="pc-btn pc-btn-primary" type="submit">Se déconnecter</button>
-                            </form>
-                        @else
-                        <a href="{{ route('login') }}" class="pc-btn">Connexion</a>
-                        <a href="{{ route('register') }}" class="pc-btn pc-btn-primary">Inscription</a>
-                        @endauth
+                <div style="display:flex;align-items:center;gap:24px">
+                    <a href="{{ auth()->check() ? route('dashboard') : url('/') }}" class="pc-brand">petit<span>Chef</span></a>
+                    @auth
+                    <nav style="display:flex;gap:4px">
+                        <a href="{{ route('menu') }}" class="pc-btn {{ request()->routeIs('menu') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                            Menu du jour
+                        </a>
+                        @if(auth()->user()->role === 'client')
+                        <a href="{{ route('cart.index') }}" class="pc-btn {{ request()->routeIs('cart.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="9" cy="20" r="1"/><circle cx="20" cy="20" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            Panier
+                            @php
+                                $cartCount = collect(session('cart.items', []))->sum('quantity');
+                            @endphp
+                            @if($cartCount > 0)
+                                <span style="background:var(--terracotta);color:#fff;border-radius:999px;font-size:10px;font-weight:700;padding:1px 6px;min-width:18px;text-align:center">{{ $cartCount }}</span>
+                            @endif
+                        </a>
+                        <a href="{{ route('client.orders.history') }}" class="pc-btn {{ request()->routeIs('client.orders.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Mes commandes
+                        </a>
+                        @endif
+                        @if(auth()->user()->role === 'cook')
+                        <a href="{{ route('cook.dashboard') }}" class="pc-btn {{ request()->routeIs('cook.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+                            Espace Cuisinier
+                        </a>
+                        @endif
+                        @if(auth()->user()->role === 'admin')
+                        <a href="{{ route('admin.dashboard') }}" class="pc-btn {{ request()->routeIs('admin.*') ? 'pc-btn-primary' : '' }}" style="padding:7px 14px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                            Administration
+                        </a>
+                        @endif
                     </nav>
+                    @endauth
+                </div>
+                <nav class="pc-nav-links">
+                    @auth
+                    <a href="{{ route('profile.edit') }}" class="pc-btn">Mon profil</a>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button class="pc-btn pc-btn-primary" type="submit">Se déconnecter</button>
+                    </form>
+                    @else
+                    <a href="{{ route('login') }}" class="pc-btn">Connexion</a>
+                    <a href="{{ url('/#plats-populaires') }}" class="pc-btn">Menu</a>
+                    <a href="{{ route('register') }}" class="pc-btn pc-btn-primary">Inscription</a>
+                    @endauth
+                </nav>
             </header>
 
             <main class="pc-main">
+                <div id="pc-toast-stack" style="position:fixed;top:72px;right:16px;z-index:100;display:grid;gap:8px;max-width:320px;"></div>
+
                 @if (session('status'))
                     <div class="pc-alert pc-alert-success">
                         {{ session('status') }}
@@ -264,5 +319,30 @@
                 @yield('content')
             </main>
         </div>
+
+        <script>
+            // Les toasts sont gérés par realtime.js via showToast()
+            // Compatibilité avec l'ancien système pc:notify
+            window.addEventListener('pc:notify', function (e) {
+                var d = e.detail || {};
+                if (window.pcShowToast) window.pcShowToast(d.title || '', d.message || '');
+            });
+
+            // Auto-disparition des alertes serveur (status / erreurs)
+            document.querySelectorAll('.pc-alert').forEach(function (alert) {
+                var timeout = alert.classList.contains('pc-alert-error') ? 7000 : 5000;
+
+                setTimeout(function () {
+                    alert.style.transition = 'opacity .35s ease, transform .35s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-6px)';
+
+                    setTimeout(function () {
+                        alert.remove();
+                    }, 350);
+                }, timeout);
+            });
+        </script>
+        @stack('scripts')
     </body>
 </html>

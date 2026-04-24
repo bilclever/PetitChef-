@@ -14,7 +14,7 @@ return new class extends Migration
             }
 
             if (! Schema::hasColumn('users', 'role')) {
-                $table->string('role')->default('client')->after('phone');
+                $table->enum('role', ['admin', 'cook', 'client'])->default('client')->after('phone');
             }
 
             if (! Schema::hasColumn('users', 'approval_status')) {
